@@ -174,7 +174,7 @@ def get_env_params(max_nb_objects=3,
 
     def get_obj_color(all_obj_features, i_obj):
         obj_features = all_obj_features[i_obj]
-        rgb = obj_features[color_inds]
+        rgb = list(obj_features[color_inds])
         for c in colors:
             for s in shades:
                 color_class = Color(c, s)

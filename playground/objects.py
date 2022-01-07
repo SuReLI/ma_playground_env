@@ -334,6 +334,9 @@ class Animals(LivingThings):
                     # check action
                     size = min(self.size + self.obj_size_update, self.min_max_sizes[1][1] + self.obj_size_update)
                     self._update_size(size)
+        if not self.grasped:
+            new_position = self.position + np.random.default_rng().normal(scale=0.05, size=(2,))
+            self._update_position(new_position)
 
         return super().update_state(hand_position, gripper_state, objects, object_grasped, action)
 
