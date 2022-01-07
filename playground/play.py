@@ -1,7 +1,7 @@
 import gym
 import numpy as np
 import pygame
-from pygame.locals import *
+import pygame.locals as pl
 import time
 import sys
 
@@ -28,27 +28,25 @@ goal_str = np.random.choice(all_descriptions)
 env.reset()
 env.unwrapped.reset_with_goal(goal_str)
 
-while True:
+stop = False
+while not stop:
     # init_render
 
     action = np.zeros([3])
     for event in pygame.event.get():
-        if hasattr(event, 'key'):
-            # J1
-            if (event.key == K_DOWN):
+        if event.type == pl.KEYDOWN:
+            if (event.key == pl.K_DOWN):
                 action[1] = -1
-            elif event.key == K_UP:
+            elif event.key == pl.K_UP:
                 action[1] = 1
-            # J2
-            elif (event.key == K_LEFT):
+            elif (event.key == pl.K_LEFT):
                 action[0] = -1
-            elif event.key == K_RIGHT:
+            elif event.key == pl.K_RIGHT:
                 action[0] = 1
-            # J3
-            elif event.key == K_SPACE:
+            elif event.key == pl.K_SPACE:
                 action[2] = 1
 
-            elif event.key == K_q:
+            elif event.key == pl.K_q:
                 stop = True
             if action.sum() != 0:
                 time.sleep(0.05)
