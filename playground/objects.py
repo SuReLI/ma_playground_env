@@ -319,9 +319,15 @@ class LivingThings(Thing):
 
 class Animals(LivingThings):
     def __init__(self, object_descr, object_id_int, params):
-        self.speed = 0.05
         rng = np.random.default_rng()
-        self.movement = lambda s: rng.normal(scale=s, size=(2,))
+        self.speed = 0.05
+        movement = rng.choice(np.array(["home", "random"]))
+        if movement == "random":
+            self.movement = lambda pos, vel: pos + rng.normal(scale=vel, size=(2,))
+        elif movement == "home":
+            home = rng.uniform(0, 1, size=(2,))
+            self.movement = lambda pos, vel: pos + (home - pos) * vel
+
         super().__init__(object_descr, object_id_int, params)
 
     def update_state(self, hand_position, gripper_state, objects, object_grasped, action):
@@ -338,8 +344,7 @@ class Animals(LivingThings):
                     size = min(self.size + self.obj_size_update, self.min_max_sizes[1][1] + self.obj_size_update)
                     self._update_size(size)
         if not self.grasped:
-            new_position = self.position + self.movement(self.speed)
-            self._update_position(new_position)
+            self._update_position(self.movement(self.position, self.speed))
 
         return super().update_state(hand_position, gripper_state, objects, object_grasped, action)
 
