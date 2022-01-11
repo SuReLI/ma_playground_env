@@ -275,7 +275,7 @@ class PlayGroundNavigationV1(gym.Env):
         # Update the agents positions
         for a, agent in enumerate(self.agents):
             if agent.obj_grasped != "animal":
-                agent.pos = np.clip(agent.pos + action[a, :2] * self.agent_step_size, -1.2, 1.2)
+                agent.pos = np.clip(agent.pos + action[a, :2] * self.agent_step_size, -1.5, 1.5)
 
             # Update the gripper state
             if self.human:
