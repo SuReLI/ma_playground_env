@@ -107,6 +107,7 @@ def get_env_params(max_nb_objects=3,
 
 
     # get indices of attributes in object feature vector
+    nb_agents = 1
     dim_body_features = 3
     agent_position_inds = np.arange(2)
     dim_obj_features = nb_types + 7
@@ -120,6 +121,7 @@ def get_env_params(max_nb_objects=3,
                   max_nb_objects=max_nb_objects,
                   admissible_actions=admissible_actions,
                   admissible_attributes=admissible_attributes,
+                  nb_agents=nb_agents,
                   dim_body_features=dim_body_features,
                   agent_position_inds=agent_position_inds,
                   grasped_inds=grasped_inds,
@@ -153,7 +155,7 @@ def get_env_params(max_nb_objects=3,
         return (state.size - params['dim_body_features']) // params['dim_obj_features']
 
     def get_obj_features(state, i_obj):
-        inds = np.arange(dim_body_features + dim_obj_features * i_obj, dim_body_features + dim_obj_features * (i_obj + 1))
+        inds = np.arange(nb_agents * dim_body_features + dim_obj_features * i_obj, nb_agents * dim_body_features + dim_obj_features * (i_obj + 1))
         return state[inds]
 
     # Attribute extraction functions

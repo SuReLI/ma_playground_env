@@ -5,6 +5,7 @@ import numpy as np
 import pygame
 from playground.objects import generate_objects
 from playground.env_params import get_env_params
+from playground.agent import Agent
 
 class PlayGroundNavigationV1(gym.Env):
     metadata = {
@@ -76,15 +77,16 @@ class PlayGroundNavigationV1(gym.Env):
 
         # Dimensions of action and observations spaces
         self.dim_act = 3
+        self.nb_agents = self.params['nb_agents']
         self.max_nb_objects = self.params['max_nb_objects']
         self.random_nb_obj = random_nb_obj
         self.nb_obj = self.params['max_nb_objects']
         self.dim_obj = self.params['dim_obj_features']
         self.dim_body = self.params['dim_body_features']
-        self.inds_objs = [np.arange(self.dim_body  + self.dim_obj * i_obj, self.dim_body + self.dim_obj * (i_obj + 1))
+        self.inds_objs = [np.arange(self.nb_agents * self.dim_body  + self.dim_obj * i_obj, self.nb_agents * self.dim_body + self.dim_obj * (i_obj + 1))
                           for i_obj in range(self.nb_obj)]
         
-        self.half_dim_obs = self.max_nb_objects * self.dim_obj + self.dim_body
+        self.half_dim_obs = self.max_nb_objects * self.dim_obj + self.nb_agents * self.dim_body
         self.dim_obs = int(2 * self.half_dim_obs)
 
         # We define the spaces
@@ -99,6 +101,7 @@ class PlayGroundNavigationV1(gym.Env):
         self.agent_step_size = agent_step_size
         self.agent_initial_pos = agent_initial_pos
         self.agent_initial_pos_range = agent_initial_pos_range
+        self.agents = [Agent() for _ in range(self.nb_agents)]
 
         # rendering
         self.human = human
@@ -197,22 +200,24 @@ class PlayGroundNavigationV1(gym.Env):
 
         self.agent_pos = self.agent_initial_pos
 
-        if self.random_init:
-            self.agent_pos += np.random.uniform(-self.agent_initial_pos_range, self.agent_initial_pos_range, 2)
-            self.gripper_state = np.random.choice([-1, 1])
-        else:
-            self.gripper_state = -1
+        for agent in self.agents:
+            if self.random_init:
+                agent.pos += np.random.uniform(-self.agent_initial_pos_range, self.agent_initial_pos_range, 2)
+                agent.gripper = np.random.choice([-1, 1])
+            else:
+                agent.gripper = -1
 
         self.objects = self.sample_objects(objects)
 
         # Print objects
         self.object_grasped = False
-        for obj in self.objects:
-            self.object_grasped = obj.update_state(self.agent_pos,
-                                                   self.gripper_state > 0,
-                                                   self.objects,
-                                                   self.object_grasped,
-                                                   np.zeros([self.dim_act]))
+        for agent in self.agents:
+            for obj in self.objects:
+                self.object_grasped = obj.update_state(agent.pos,
+                                                       agent.gripper > 0,
+                                                       self.objects,
+                                                       self.object_grasped,
+                                                       np.zeros([self.dim_act]))
 
 
         # construct vector of observations
@@ -248,8 +253,8 @@ class PlayGroundNavigationV1(gym.Env):
     def observe(self):
 
         obj_features = np.array([obj.get_features() for obj in self.objects]).flatten()
-        obs = np.concatenate([self.agent_pos,  # size 2
-                              np.array([self.gripper_state]),
+        obs = np.concatenate([agent.pos for agent in self.agents] +  # size 2
+                              [np.array([agent.gripper for agent in self.agents]),
                               obj_features,
                               ])
 
@@ -269,27 +274,29 @@ class PlayGroundNavigationV1(gym.Env):
         if np.sum(action) != 0:
             self.first_action = True
 
-        # Update the agent position
-        self.agent_pos = np.clip(self.agent_pos + action[:2] * self.agent_step_size, -1.2, 1.2)
+        # Update the agents positions
+        for a, agent in enumerate(self.agents):
+            agent.pos = np.clip(agent.pos + action[a, :2] * self.agent_step_size, -1.2, 1.2)
 
-        # Update the gripper state
-        if self.human:
-            if action[2] > 0:
-                self.gripper_state = 1 if self.gripper_state == -1 else -1
-        else:
-            if action[2] > 0.:
-                new_gripper = 1
+            # Update the gripper state
+            if self.human:
+                if action[a, 2] > 0:
+                    agent.gripper = 1 if agent.gripper == -1 else -1
             else:
-                new_gripper = -1
-            self.gripper_change = new_gripper == self.gripper_state
-            self.gripper_state = new_gripper
+                if action[a, 2] > 0.:
+                    new_gripper = 1
+                else:
+                    new_gripper = -1
+                agent.gripper_change = new_gripper == agent.gripper
+                agent.gripper = new_gripper
 
-        for obj in self.objects:
-            self.object_grasped = obj.update_state(self.agent_pos,
-                                                   self.gripper_state > 0,
-                                                   self.objects,
-                                                   self.object_grasped,
-                                                   action)
+        for agent in self.agents:
+            for obj in self.objects:
+                self.object_grasped = obj.update_state(agent.pos,
+                                                       agent.gripper > 0,
+                                                       self.objects,
+                                                       self.object_grasped,
+                                                       action)
 
 
         self.observation[:self.half_dim_obs] = self.observe()
@@ -344,24 +351,25 @@ class PlayGroundNavigationV1(gym.Env):
 
                 pygame.draw.rect(self.viewer, pygame.Color('darkred'), (860 + int(x * 160), 252.5 + 200 * i_obj, 3, 25))
 
-        # GRIPPER
-        x, y = self.get_pixel_coordinates(self.agent_pos[0], self.agent_pos[1])
-        # TODO don't load in rendering this is stupid
-        size_gripper_pixels = 55
-        size_gripper_closed_pixels = 45
-        gripper_icon = pygame.image.load(self.params['img_path'] + 'hand_open.png')
-        gripper_icon = pygame.transform.scale(gripper_icon, (size_gripper_pixels, size_gripper_pixels)).convert_alpha()
-        closed_gripper_icon = pygame.image.load(self.params['img_path'] + 'hand_closed.png')
-        closed_gripper_icon = pygame.transform.scale(closed_gripper_icon,
-                                                     (size_gripper_closed_pixels, size_gripper_pixels)).convert_alpha()
-        if self.gripper_state == 1:
-            left = int(x - size_gripper_closed_pixels // 2)
-            top = int(y - size_gripper_closed_pixels // 2)
-            self.viewer.blit(closed_gripper_icon, (left, top))
-        else:
-            left = int(x - size_gripper_pixels // 2)
-            top = int(y - size_gripper_pixels // 2)
-            self.viewer.blit(gripper_icon, (left, top))
+        # GRIPPERS
+        for agent in self.agents:
+            x, y = self.get_pixel_coordinates(agent.pos[0], agent.pos[1])
+            # TODO don't load in rendering this is stupid
+            size_gripper_pixels = 55
+            size_gripper_closed_pixels = 45
+            gripper_icon = pygame.image.load(self.params['img_path'] + 'hand_open.png')
+            gripper_icon = pygame.transform.scale(gripper_icon, (size_gripper_pixels, size_gripper_pixels)).convert_alpha()
+            closed_gripper_icon = pygame.image.load(self.params['img_path'] + 'hand_closed.png')
+            closed_gripper_icon = pygame.transform.scale(closed_gripper_icon,
+                                                         (size_gripper_closed_pixels, size_gripper_pixels)).convert_alpha()
+            if agent.gripper == 1:
+                left = int(x - size_gripper_closed_pixels // 2)
+                top = int(y - size_gripper_closed_pixels // 2)
+                self.viewer.blit(closed_gripper_icon, (left, top))
+            else:
+                left = int(x - size_gripper_pixels // 2)
+                top = int(y - size_gripper_pixels // 2)
+                self.viewer.blit(gripper_icon, (left, top))
 
         # IMAGINATION BUBBLE
         if self.first_action == False:

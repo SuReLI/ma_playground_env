@@ -28,25 +28,30 @@ goal_str = np.random.choice(all_descriptions)
 env.reset()
 env.unwrapped.reset_with_goal(goal_str)
 
+key_maps = [
+    [pl.K_DOWN, pl.K_UP, pl.K_LEFT, pl.K_RIGHT, pl.K_SPACE],
+]
+
 stop = False
 while not stop:
     # init_render
 
-    action = np.zeros([3])
+    action = np.zeros([env_params["nb_agents"], 3])
     for event in pygame.event.get():
         if event.type == pl.KEYDOWN:
-            if (event.key == pl.K_DOWN):
-                action[1] = -1
-            elif event.key == pl.K_UP:
-                action[1] = 1
-            elif (event.key == pl.K_LEFT):
-                action[0] = -1
-            elif event.key == pl.K_RIGHT:
-                action[0] = 1
-            elif event.key == pl.K_SPACE:
-                action[2] = 1
+            for a in range(env_params["nb_agents"]):
+                if event.key == key_maps[a][0]:
+                    action[a, 1] = -1
+                elif event.key == key_maps[a][1]:
+                    action[a, 1] = 1
+                elif event.key == key_maps[a][2]:
+                    action[a, 0] = -1
+                elif event.key == key_maps[a][3]:
+                    action[a, 0] = 1
+                elif event.key == key_maps[a][4]:
+                    action[a, 2] = 1
 
-            elif event.key == pl.K_q:
+            if event.key == pl.K_q:
                 stop = True
             if action.sum() != 0:
                 time.sleep(0.05)
