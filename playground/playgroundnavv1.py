@@ -103,7 +103,7 @@ class PlayGroundNavigationV1(gym.Env):
         self.agent_initial_pos_range = agent_initial_pos_range
         self.agent_colors_grip = self.params["agent_colors_grip"]
         self.agent_colors_idle = self.params["agent_colors_idle"]
-        self.agents = [Agent() for _ in range(self.nb_agents)]
+        self.agents = [Agent(id) for id in range(self.nb_agents)]
 
         # rendering
         self.human = human
@@ -124,6 +124,7 @@ class PlayGroundNavigationV1(gym.Env):
         self.observation = None
         self.initial_observation = None
         self.done = None
+
 
 
     def regularize_type_and_attribute(self, object):
@@ -215,7 +216,7 @@ class PlayGroundNavigationV1(gym.Env):
         self.object_grasped = False
         for a, agent in enumerate(self.agents):
             for obj in self.objects:
-                obj.update_state(a, agent.pos, agent.gripper > 0, self.objects)
+                obj.update_state(agent, self.objects)
 
         # construct vector of observations
         self.observation = np.zeros(self.dim_obs)
@@ -289,7 +290,7 @@ class PlayGroundNavigationV1(gym.Env):
 
         for a, agent in enumerate(self.agents):
             for obj in self.objects:
-                obj.update_state(a, agent.pos, agent.gripper > 0, self.objects)
+                obj.update_state(agent, self.objects)
 
 
         self.observation[:self.half_dim_obs] = self.observe()
@@ -299,7 +300,7 @@ class PlayGroundNavigationV1(gym.Env):
         if self.env_step == self.max_timesteps:
             self.done = True
 
-        return self.observation.copy(), 0, False, {}
+        return self.observation.copy(), 0, self.done, {}
 
     def render(self, goal_str, mode='human', close=False):
 
