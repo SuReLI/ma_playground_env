@@ -244,6 +244,7 @@ class Thing:
             if self.grasped < 0 and agent.grip() and not agent.grasping:
                 self.grasped = agent.id
                 agent.grasping = True
+                agent.obj_grasped = "animal" if isinstance(self, Animals) else ''
 
         # if grasped, the object follows the hand if it is the right hand to follow
         if self.grasped == agent.id:
@@ -251,6 +252,7 @@ class Thing:
                 self._update_position(agent.pos.copy())
             else:
                 agent.grasping = False
+                agent.obj_grasped = ''
                 self.grasped = -1
         self.features = self.get_features()
         return
