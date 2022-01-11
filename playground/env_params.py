@@ -107,7 +107,7 @@ def get_env_params(max_nb_objects=3,
 
 
     # get indices of attributes in object feature vector
-    nb_agents = 1
+    nb_agents = 2
     dim_body_features = 3
     agent_position_inds = np.arange(2)
     dim_obj_features = nb_types + 7

@@ -30,6 +30,7 @@ env.unwrapped.reset_with_goal(goal_str)
 
 key_maps = [
     [pl.K_DOWN, pl.K_UP, pl.K_LEFT, pl.K_RIGHT, pl.K_SPACE],
+    [pl.K_j, pl.K_k, pl.K_h, pl.K_l, pl.K_RETURN],
 ]
 
 stop = False
