@@ -305,16 +305,32 @@ class LivingThings(Thing):
 
 class Animals(LivingThings):
     def __init__(self, object_descr, object_id_int, params):
-        rng = np.random.default_rng()
+        self.rng = np.random.default_rng()
         self.speed = 0.05
-        movement = rng.choice(np.array(["home", "random"]))
+        # movement = self.rng.choice(np.array(["home", "random", "path"]))
+        movement = "path"
         if movement == "random":
-            self.movement = lambda pos, vel: pos + rng.normal(scale=vel, size=(2,))
+            self.movement = self._movement_random
         elif movement == "home":
-            home = rng.uniform(0, 1, size=(2,))
-            self.movement = lambda pos, vel: pos + (home - pos) * vel
+            self.home = self.rng.uniform(-1, 1, size=(2,))
+            self.movement = self._movement_home
+        elif movement == "path":
+            self.home = self.rng.uniform(-1, 1, size=(2,))
+            self.movement = self._movement_path
 
         super().__init__(object_descr, object_id_int, params)
+
+    # implementation of some movements.
+    def _movement_random(self):
+        return self.position + self.rng.normal(scale=self.speed, size=(2,))
+
+    def _movement_home(self):
+        return self.position + (self.home - self.position) * self.speed
+
+    def _movement_path(self):
+        if np.linalg.norm(self.home - self.position) < self.size / 2:
+            self.home = self.rng.uniform(-1, 1, size=(2,))
+        return self._movement_home()
 
     def update_state(self, agent, objects):
         """
@@ -330,7 +346,7 @@ class Animals(LivingThings):
                     size = min(self.size + self.obj_size_update, self.min_max_sizes[1][1] + self.obj_size_update)
                     self._update_size(size)
         if self.grasped < 0:
-            self._update_position(self.movement(self.position, self.speed))
+            self._update_position(self.movement())
 
         return super().update_state(agent, objects)
 
