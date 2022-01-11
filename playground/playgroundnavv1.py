@@ -213,14 +213,9 @@ class PlayGroundNavigationV1(gym.Env):
 
         # Print objects
         self.object_grasped = False
-        for agent in self.agents:
+        for a, agent in enumerate(self.agents):
             for obj in self.objects:
-                self.object_grasped = obj.update_state(agent.pos,
-                                                       agent.gripper > 0,
-                                                       self.objects,
-                                                       self.object_grasped,
-                                                       np.zeros([self.dim_act]))
-
+                obj.update_state(a, agent.pos, agent.gripper > 0, self.objects)
 
         # construct vector of observations
         self.observation = np.zeros(self.dim_obs)
@@ -292,13 +287,9 @@ class PlayGroundNavigationV1(gym.Env):
                 agent.gripper_change = new_gripper == agent.gripper
                 agent.gripper = new_gripper
 
-        for agent in self.agents:
+        for a, agent in enumerate(self.agents):
             for obj in self.objects:
-                self.object_grasped = obj.update_state(agent.pos,
-                                                       agent.gripper > 0,
-                                                       self.objects,
-                                                       self.object_grasped,
-                                                       action)
+                obj.update_state(a, agent.pos, agent.gripper > 0, self.objects)
 
 
         self.observation[:self.half_dim_obs] = self.observe()

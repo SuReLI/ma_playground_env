@@ -43,7 +43,7 @@ class Thing:
         self.position = None
         self.size = None
         self.type = None
-        self.grasped = False
+        self.grasped = -1
         self.scene_objects = []  # list of refs to other objects from the scene
 
         # initialize values for the type, position color and size.
@@ -229,53 +229,37 @@ class Thing:
                         return False
         return True
 
-    def update_state(self, agent_position, gripper_state, objects, object_grasped, action):
+    def update_state(self, agent_id, agent_position, gripper_state, objects):
         """
         Update the state of the object after interactions with the agent or other object.
         Parameters
         ----------
+        agent_id: int
+            the id of the agent trying to grasp or let go the object.
         agent_position: nd.array of size 2
             New agent position (2D).
         gripper_state: Boolean
             New gripper state (closed or open).
-        objects: list of Thing objects
-            Ref to other scene objects.
-        object_grasped: Boolean
-            Whether the object was grasped before.
-        action: nd.array
-            The action of the agent.
-
         """
-        update_object_grasped = object_grasped
-
         # if the hand is close enough
         if np.linalg.norm(self.position - agent_position) < (self.size + self.agent_size) / 2:
+            if self.grasped < 0 and gripper_state:
+                self.grasped = agent_id
 
-            # if an object is grasped
-            if object_grasped:
-                # check if it's that one, if it's still grasped
-                if self.grasped:
-                    if not gripper_state:
-                        update_object_grasped = False
-                        self.grasped = False
-            # if not object is grasped, check if this one is being grasped
+        # if grasped, the object follows the hand if it is the right hand to follow
+        if self.grasped == agent_id:
+            if gripper_state:
+                self._update_position(agent_position.copy())
             else:
-                if gripper_state:
-                    self.grasped = True
-                    update_object_grasped = True
-
-
-        # if grasped, the object follows the hand
-        if self.grasped:
-            self._update_position(agent_position.copy())
+                self.grasped = -1
         self.features = self.get_features()
-        return update_object_grasped
+        return
 
     def get_features(self):
         """
         Form features of the object.
         """
-        grasped_feature = np.array([1]) if self.grasped else np.array([-1])
+        grasped_feature = np.array([1]) if self.grasped >= 0 else np.array([-1])
         features = np.concatenate([self.type, self.position, np.array([self.size]), self.rgb_code, grasped_feature])
         return features
 
@@ -330,7 +314,7 @@ class Animals(LivingThings):
 
         super().__init__(object_descr, object_id_int, params)
 
-    def update_state(self, hand_position, gripper_state, objects, object_grasped, action):
+    def update_state(self, agent_id, hand_position, gripper_state, objects):
         """
         Animal objects can be grown. This function checks whether a supply is put in contact with the animal. If it is, the animal grows.
 
@@ -343,10 +327,10 @@ class Animals(LivingThings):
                     # check action
                     size = min(self.size + self.obj_size_update, self.min_max_sizes[1][1] + self.obj_size_update)
                     self._update_size(size)
-        if not self.grasped:
+        if self.grasped < 0:
             self._update_position(self.movement(self.position, self.speed))
 
-        return super().update_state(hand_position, gripper_state, objects, object_grasped, action)
+        return super().update_state(agent_id, hand_position, gripper_state, objects)
 
 
 class Furnitures(Thing):
@@ -357,9 +341,8 @@ class Furnitures(Thing):
 class Plants(LivingThings):
     def __init__(self, object_descr, object_id_int, params):
         super().__init__(object_descr, object_id_int, params)
-       
 
-    def update_state(self, hand_position, gripper_state, objects, object_grasped, action):
+    def update_state(self, agent_id, hand_position, gripper_state, objects):
         """
         Plant objects can be grown. This function checks whether a water object is put in contact with the plant. If it is, the plant grows.
 
@@ -371,7 +354,7 @@ class Plants(LivingThings):
                     # check action
                     size = min(self.size + self.obj_size_update, self.min_max_sizes[1][1] + self.obj_size_update)
                     self._update_size(size)
-        return super().update_state(hand_position, gripper_state, objects, object_grasped, action)
+        return super().update_state(agent_id, hand_position, gripper_state, objects)
 
 
 class Supplies(Thing):
