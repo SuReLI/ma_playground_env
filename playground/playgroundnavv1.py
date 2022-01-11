@@ -101,6 +101,8 @@ class PlayGroundNavigationV1(gym.Env):
         self.agent_step_size = agent_step_size
         self.agent_initial_pos = agent_initial_pos
         self.agent_initial_pos_range = agent_initial_pos_range
+        self.agent_colors_grip = self.params["agent_colors_grip"]
+        self.agent_colors_idle = self.params["agent_colors_idle"]
         self.agents = [Agent() for _ in range(self.nb_agents)]
 
         # rendering
@@ -197,10 +199,10 @@ class PlayGroundNavigationV1(gym.Env):
         return self.reset_scene()
 
     def reset_scene(self, objects=None):
-
-        self.agent_pos = self.agent_initial_pos
-
-        for agent in self.agents:
+        for a, agent in enumerate(self.agents):
+            agent.pos = self.agent_initial_pos
+            agent.color_grip = self.agent_colors_grip[a]
+            agent.color_idle = self.agent_colors_idle[a]
             if self.random_init:
                 agent.pos += np.random.uniform(-self.agent_initial_pos_range, self.agent_initial_pos_range, 2)
                 agent.gripper = np.random.choice([-1, 1])
@@ -365,10 +367,12 @@ class PlayGroundNavigationV1(gym.Env):
             if agent.gripper == 1:
                 left = int(x - size_gripper_closed_pixels // 2)
                 top = int(y - size_gripper_closed_pixels // 2)
+                closed_gripper_icon.fill(agent.color_grip, special_flags=pygame.BLEND_MULT)
                 self.viewer.blit(closed_gripper_icon, (left, top))
             else:
                 left = int(x - size_gripper_pixels // 2)
                 top = int(y - size_gripper_pixels // 2)
+                gripper_icon.fill(agent.color_idle, special_flags=pygame.BLEND_MULT)
                 self.viewer.blit(gripper_icon, (left, top))
 
         # IMAGINATION BUBBLE

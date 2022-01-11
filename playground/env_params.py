@@ -108,6 +108,8 @@ def get_env_params(max_nb_objects=3,
 
     # get indices of attributes in object feature vector
     nb_agents = 2
+    agent_colors_idle = [(127, 0, 0, 255), (0, 127, 0, 255)]
+    agent_colors_grip = [(255, 0, 0, 255), (0, 255, 0, 255)]
     dim_body_features = 3
     agent_position_inds = np.arange(2)
     dim_obj_features = nb_types + 7
@@ -122,6 +124,8 @@ def get_env_params(max_nb_objects=3,
                   admissible_actions=admissible_actions,
                   admissible_attributes=admissible_attributes,
                   nb_agents=nb_agents,
+                  agent_colors_grip=agent_colors_grip,
+                  agent_colors_idle=agent_colors_idle,
                   dim_body_features=dim_body_features,
                   agent_position_inds=agent_position_inds,
                   grasped_inds=grasped_inds,

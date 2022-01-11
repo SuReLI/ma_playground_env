@@ -13,5 +13,7 @@ class Agent:
 
     def __init__(self):
         self.pos: np.ndarray = np.empty((2,))
-        self.gripper: bool = False
+        self.gripper: int = -1
         self.gripper_change: bool = False
+        self.color_idle: tuple[int, int, int, int] = (-1, -1, -1, -1)
+        self.color_grip: tuple[int, int, int, int] = (-1, -1, -1, -1)
