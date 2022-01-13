@@ -15,7 +15,7 @@ from playground.env_params import get_env_params
 Playing script. Control the agent with the arrows, close the gripper with the space bar.
 """
 
-env = gym.make(ENV_NAME, reward_screen=False, viz_data_collection=True)
+env = gym.make(ENV_NAME, reward_screen=False, viz_data_collection=True, random_init=True)
 pygame.init()
 
 env_params = get_env_params()
@@ -64,7 +64,7 @@ while not stop:
     # Sample descriptions of the current state
     train_descr, test_descr, extra_descr = sample_descriptions_from_state(out[0], env.unwrapped.params)
     descr = train_descr + test_descr
-    print(descr)
+    # print(descr)
 
     # assert that the reward function works, should give positive rewards for descriptions sampled, negative for others.
     for d in descr:
@@ -73,3 +73,5 @@ while not stop:
         assert not get_reward_from_state(out[0], d, env_params)
 
 
+env.close()
+pygame.quit()
