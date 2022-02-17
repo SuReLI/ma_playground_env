@@ -1,6 +1,5 @@
 from gym.envs.registration import register
 
-print("REGISTRATION")
 for v in ['1']:
     register(id='PlaygroundNavigation-v' + v,
              entry_point='playground.playgroundnavv' + v + ':PlayGroundNavigationV' + v,
